@@ -1,0 +1,5 @@
+dependencies {
+    implementation libs.jserialcomm
+
+    implementation project(':core-message')
+}

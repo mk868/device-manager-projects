@@ -1,0 +1,9 @@
+
+.top {
+  -fx-background-color: -color-background-light;
+}
+
+.top .title {
+  -fx-fill: -color-text;
+  -fx-font-size: 32;
+}

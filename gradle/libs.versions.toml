@@ -1,0 +1,15 @@
+[versions]
+checkstyle = "8.43"
+ikonli = "12.2.0"
+
+[libraries]
+guice = "com.google.inject:guice:5.0.1"
+slf4j = "org.slf4j:slf4j-api:1.7.30"
+ikonli-javafx = { module = "org.kordamp.ikonli:ikonli-javafx", version.ref = "ikonli" }
+ikonli-fontawesome5 = { module = "org.kordamp.ikonli:ikonli-fontawesome5-pack", version.ref = "ikonli" }
+jserialcomm = "com.fazecast:jSerialComm:2.7.0"
+testng = "org.testng:testng:7.4.0"
+logback = "ch.qos.logback:logback-classic:1.2.3"
+
+[bundles]
+ikonli = ["ikonli-javafx", "ikonli-fontawesome5"]

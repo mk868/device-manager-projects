@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<GridPane
+  xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+  fx:controller="mk.dm.app.client.controller.BottomController"
+  styleClass="bottom"
+>
+  <HBox>
+    <Label>Bottom</Label>
+    <CheckBox fx:id="debugUI" text="debug"/>
+  </HBox>
+</GridPane>

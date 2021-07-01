@@ -1,0 +1,46 @@
+plugins {
+    id 'application'
+    id 'org.openjfx.javafxplugin'
+    id 'org.panteleyev.jpackageplugin'
+}
+
+version '1.0-SNAPSHOT'
+
+application {
+    mainClass.set('mk.dm.app.client.Main')
+}
+
+javafx {
+    version = "16"
+    modules = ['javafx.base', 'javafx.graphics', 'javafx.controls', 'javafx.fxml']
+}
+
+tasks.jpackage {
+    dependsOn("build", "copyDependencies", "copyJar")
+
+    appName = "Client App Device Manager"
+    appVersion = project.version.toString()
+    vendor = "mk868"
+    copyright = "Copyright (c) 2021"
+    runtimeImage = System.getProperty("java.home")
+    module = "root.app.client/mk.dm.app.client.Main"
+    modulePaths = ["$buildDir/jmods"]
+    destination = "$buildDir/dist"
+    javaOptions = ["-Dfile.encoding=UTF-8"]
+
+    windows {
+        winMenu = true
+    }
+    linux {
+        linuxShortcut = true
+    }
+}
+
+dependencies {
+    implementation libs.logback
+    implementation libs.guice
+    implementation libs.bundles.ikonli
+    implementation project(':core-message')
+    implementation project(':core-communication-serial')
+    implementation project(':message-client')
+}

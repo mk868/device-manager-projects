@@ -1,0 +1,22 @@
+
+.content-box {
+  -fx-background-color: -color-background-dark;
+  -fx-border-color: #2b3946;
+  -fx-border-width: 2 0 2 2;
+}
+
+.content-box .content {
+  -fx-background: -color-background-dark;
+  -fx-border-color: -color-background-dark;
+}
+
+.content-box .content * {
+  -fx-text-fill: -color-text;
+}
+
+.content-box .content .title {
+  -fx-font-size: 22;
+  -fx-fill: -color-text;
+}
+
+

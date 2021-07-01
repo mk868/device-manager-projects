@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.control.CheckBox?>
+<VBox xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+  fx:controller="mk.dm.app.client.controller.content.LogsPageController"
+  styleClass="content">
+  <Text styleClass="title">Logs</Text>
+
+  <CheckBox fx:id="loggerEnabledCheckbox" text="Logger enabled" onAction="#loggerEnabledAction"/>
+
+  <TableView fx:id="logTableView" VBox.vgrow="ALWAYS">
+    <columns>
+      <TableColumn fx:id="dateColumn" text="Date" sortable="false">
+        <cellValueFactory>
+          <PropertyValueFactory property="date"/>
+        </cellValueFactory>
+      </TableColumn>
+      <TableColumn fx:id="typeColumn" text="Type" sortable="false">
+        <cellValueFactory>
+          <PropertyValueFactory property="type"/>
+        </cellValueFactory>
+      </TableColumn>
+      <TableColumn fx:id="messageColumn" text="Message" sortable="false">
+        <cellValueFactory>
+          <PropertyValueFactory property="message"/>
+        </cellValueFactory>
+      </TableColumn>
+    </columns>
+  </TableView>
+</VBox>

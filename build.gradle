@@ -1,0 +1,48 @@
+buildscript {
+    ext.java_version = JavaVersion.VERSION_16
+}
+
+plugins {
+    id 'idea'
+    id 'org.openjfx.javafxplugin' version '0.0.10' apply false
+    id 'org.panteleyev.jpackageplugin' version '1.3.1' apply false
+}
+
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'checkstyle'
+    targetCompatibility = JavaVersion.VERSION_16
+    sourceCompatibility = JavaVersion.VERSION_16
+
+    repositories {
+        mavenLocal()
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation libs.slf4j
+        testImplementation libs.testng
+        testImplementation libs.logback
+    }
+
+    checkstyle {
+        toolVersion = libs.versions.checkstyle.get()
+    }
+
+    tasks.register('copyDependencies', Copy) {
+        from(configurations.runtimeClasspath).into("$buildDir/jmods")
+    }
+
+    tasks.register('copyJar', Copy) {
+        from(tasks.jar).into("$buildDir/jmods")
+    }
+
+    test {
+        useTestNG() {
+        }
+    }
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'

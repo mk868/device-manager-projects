@@ -1,0 +1,8 @@
+
+.left-status {
+  -fx-background-color: -color-background-light;
+}
+
+.left-status .text {
+  -fx-fill: -color-text;
+}

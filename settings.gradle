@@ -1,0 +1,7 @@
+enableFeaturePreview('VERSION_CATALOGS')
+
+rootProject.name = 'root'
+include ':core-communication-serial'
+include ':core-message'
+include ':message-client'
+include ':app-client'

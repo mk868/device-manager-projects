@@ -1,0 +1,18 @@
+
+.left-menu {
+  -fx-background-color: -color-background-light;
+}
+
+.left-menu .ikonli-font-icon {
+  -fx-fill: -color-text;
+}
+
+.left-menu .button {
+  -fx-text-fill: -color-text;
+  -fx-cursor: hand;
+  -fx-background-color: transparent;
+}
+
+.left-menu .button:hover {
+  -fx-background-color: -color-background-dark;
+}

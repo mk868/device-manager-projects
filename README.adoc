@@ -1,0 +1,125 @@
+= Device Manager
+
+A multi-module project for managing devices with multiple applications with different access levels.
+
+== Structure
+
+The structure of the project is divided into three layers of modules: *App*, *Message* and *Core*.
+
+=== App
+
+It's the set of applications for the end users.
+Each application is dedicated for specified group of users, for example:
+
+- app-client -- downloadable by any user (the risk of reverse engineering).
+- app-production -- only for production PCs, the ability to update / perform self-tests of the device in the automated way.
+- app-service -- for R&D and service guys (full control over device)
+
+=== Message
+
+To avoid abuses, the definition of messages used in the communication has been divided into layers:
+
+- message-client -- describes minimal communication messages
+- message-production -- extra messages used in production
+- message-service -- extra messages for service
+
+Any of message layer could be imported in the final *App* project.
+
+The message representations were made with java `records`.
+Each of record component describes the message field.
+
+.UpdateBlinkParams.java
+[source,java]
+----
+package mk.dm.message.client;
+
+import mk.dm.core.message.annotation.Message;
+import mk.dm.core.message.annotation.Message.Sender;
+
+@Message(messageId = 0x33, sender = Sender.HOST)
+public record UpdateBlinkParams(int timeOn, int timeOff) {
+
+}
+----
+
+The above record object can be serialized to the following byte structure:
+
+[ditaa]
+----
+UpdateBlinkParams message:
++---------+----------+---------+
+| 2 bytes | 4 bytes  | 4 bytes |
++---------+----------+---------+
+    ^          ^          ^
+    |          |          |
+MESSAGE ID  'timeOn'   'timeOff'
+ (0x33)      FIELD      FIELD
+----
+
+The binary version of the message is ready for transfer between devices.
+The message can be deserialized to the correct record based on the message ID.
+
+=== Core
+
+The basic mechanisms have been placed in modules named with the prefix core-*.
+
+- core-message -- contains the interfaces and annotations used to build a custom message sets
+- core-communication-serial -- allows to transfer frames with messages using serial port.
+
+== Communication
+
+Communication takes place via the serial port, a single structure of data sent in transmission is called frame.
+The structure of the data transmitted in the frame is as follows:
+
+.Frame structure TODO
+[ditaa]
+----
+Frame structure:
++--------+---------+-------------+---------+--------+
+| 1 byte | 4 bytes |             | 4 bytes | 1 byte |
++--------+---------+-------------+---------+--------+
+    ^        ^            ^          ^         ^
+    |        |            |          |         |
+  START    FRAME       MESSAGE      CRC      STOP
+  BYTE     LENGTH       BYTES                BYTE
+----
+
+=== Device -> Host transmission
+
+- ErrorLog(string) -- device emits logger error message
+- InfoLog(string) -- device emits logger info message
+
+=== Host -> Device transmission
+
+- EnableLogger(boolean) -- enable debug mode on the device, when enabled it started to emit logger messages
+- UpdateBlinkParams(int, int) -- update board LED blink times, just for test
+
+== Arduino UNO Firmware
+
+A sample implementation of the device was prepared using Arduino UNO.
+The source code of PlatformIO project is located in the _arduino_fw_ directory.
+
+== Technical Info
+
+What's used
+
+- Guice
+- Gradle + VERSION_CATALOGS
+- TestNG
+- JDK16
+- jpackage -- to produce final .deb and .exe files
+- JavaFX + FXML
+- records -- used to represent messages
+- base Jenkinsfile -- with https://hub.docker.com/layers/amd64/openjdk/[openjdk:16.0.1-jdk-buster]
+
+== TODO
+
+It's a demo project, in the final version I'll need:
+
+- move *core** modules into separated repo
+- move *message** modules into separated repo
+- deploy libs to Nexus
+- enrich communication frames with: frame start byte, frame length, frame stop byte, CRC
+- make communication with the device authorized, TOTP?
+- use jfoenix
+- i18n
