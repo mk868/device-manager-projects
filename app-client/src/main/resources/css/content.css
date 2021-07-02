@@ -19,4 +19,21 @@
   -fx-fill: -color-text;
 }
 
+/* Spinner styles */
+.content-box .button {
+  -fx-text-fill: -color-text-dark;
+}
 
+/* Spinner styles */
+.content-box .spinner .text-field {
+  -fx-text-fill: -color-text-dark;
+}
+
+/* TableView styles */
+.content-box .table-view .table-column {
+  -fx-text-fill: -color-text-dark;
+}
+
+.content-box .table-view .column-header .label {
+  -fx-text-fill: -color-text-dark;
+}

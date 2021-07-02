@@ -1,32 +1,56 @@
 = Device Manager
 
-A multi-module project for managing devices with multiple applications with different access levels.
+== Overview
 
-== Structure
+This project describes the architecture and concept of a device management application.
+The purpose of the application is to monitor the status of connected device, make backups, change configuration.
+The application automatically scans the devices connected to the USB.
+When a compatible device is connected, two-way communication begins.
 
-The structure of the project is divided into three layers of modules: *App*, *Message* and *Core*.
+.Fragment of the UI -- device disconnected
+image::docs/res/disconnected.png[]
 
-=== App
+.Fragment of the UI -- device connected
+image::docs/res/connected.png[]
 
-It's the set of applications for the end users.
-Each application is dedicated for specified group of users, for example:
+== Application structure
 
-- app-client -- downloadable by any user (the risk of reverse engineering).
-- app-production -- only for production PCs, the ability to update / perform self-tests of the device in the automated way.
-- app-service -- for R&D and service guys (full control over device)
+The project was created with modularity in mind, so that parts of the application can be reused and extended without having to duplicate or modify existing code.
+The following module groups were used: *App*, *Message* and *Core*.
 
-=== Message
+=== App group
 
-To avoid abuses, the definition of messages used in the communication has been divided into layers:
+This group contains all end user applications.
+Each application is dedicated for specified users, for example:
 
-- message-client -- describes minimal communication messages
-- message-production -- extra messages used in production
-- message-service -- extra messages for service
+- app-client -- used by people who bought the device, it can be downloaded on the website, with risk of reverse engineering.
+- app-production -- only for production PCs, the ability to update / perform self-tests of the device in the simplified / automated way.
+- app-service -- for R&D and service guys, allows for full control over device.
 
-Any of message layer could be imported in the final *App* project.
+.App Client -- logs view
+image::docs/res/app-logs.png[]
 
-The message representations were made with java `records`.
-Each of record component describes the message field.
+=== Message group
+
+In this project, _Message_ means the data structure used to communicate with the device.
+When communicating a _Message_ is really a block of bytes, the most important thing is to have a strategy to deserialize it into an understandable format (for Java and C code).
+So, each _Message_ type is defined by:
+
+* Unique message id -- used to identify the type of message and then recognize the message fields.
+* Message fields -- fields that the message contains.
+
+To simplify the development process, each message type is defined by an individual java `record` with the `@Message` annotation.
+The record components define the fields in the message.
+
+Why Java records?
+
+* Standardized and simple to define
+* Forced to be immutable (all fields `final`)
+* By default record has a single constructor with all fields -- it's easy to create an object with reflection
+
+Have a look at the message used to update the device LED parameters -- _UpdateBlinkParams_.
+The message id has the value `0x33`, this value is known to both the application and the device.
+The message transports information about the on and off time of the diode in fields `timeOn` and `timeOff`.
 
 .UpdateBlinkParams.java
 [source,java]
@@ -42,7 +66,8 @@ public record UpdateBlinkParams(int timeOn, int timeOff) {
 }
 ----
 
-The above record object can be serialized to the following byte structure:
+The above record object can be serialized to the byte structure shown below.
+As you can see binary data is short as possible, no redundant data.
 
 [ditaa]
 ----
@@ -56,20 +81,98 @@ MESSAGE ID  'timeOn'   'timeOff'
  (0x33)      FIELD      FIELD
 ----
 
-The binary version of the message is ready for transfer between devices.
-The message can be deserialized to the correct record based on the message ID.
+Message definitions have been separated into several modules in order to group them by permission level.
+So, in the final app we'll have the following modules:
 
-=== Core
+* message-client -- describes minimal communication messages
+* message-production -- extra messages used in production
+* message-service -- extra messages for service
+
+Of course, the device must support messages from all of these modules.
+
+=== Core group
 
 The basic mechanisms have been placed in modules named with the prefix core-*.
 
-- core-message -- contains the interfaces and annotations used to build a custom message sets
-- core-communication-serial -- allows to transfer frames with messages using serial port.
+==== core-message
 
-== Communication
+Module contains:
 
-Communication takes place via the serial port, a single structure of data sent in transmission is called frame.
-The structure of the data transmitted in the frame is as follows:
+* Interfaces and annotations to define custom message types.
+* Logic for (de)serializing fields, with possibility to define custom field serializers (for example for custom field types).
+* Logic for (de)serializing messages using field serializers
+
+Additionally, the framework supports record component annotations to serialize fields in the different ways.
+For example, it is possible to serialize a string as a fixed-length ASCII string and a variable-length ASCII string:
+
+[source,java]
+----
+package mk.dm.message.client;
+
+import mk.dm.core.message.annotation.Message;
+import mk.dm.core.message.annotation.Message.Sender;
+import mk.dm.core.message.annotation.FixedAsciiString;
+import mk.dm.core.message.annotation.VarAsciiString;
+
+@Message(messageId = 0x1234, sender = Sender.HOST)
+public record Test(
+    @FixedAsciiString(length = 10) String fixedLengthString,
+    @VarAsciiString String variousLengthString) {
+
+}
+----
+
+In this example, the _fixedLengthString_ field will always be serialized with 10 bytes.
+When the _fixedLengthString_ string is longer than 10 chars it'll be truncated, when shorter than 10 chars it'll be padded with `\0`.
+
+.Behaviour of @FixedAsciiString(length = 10)
+[ditaa]
+----
+Input
+ "12345abcde"
+Output
+ +------+------+------+------+------+------+------+------+------+------+
+ | 0x31 | 0x32 | 0x33 | 0x34 | 0x35 | 0x61 | 0x62 | 0x63 | 0x64 | 0x65 |
+ +------+------+------+------+------+------+------+------+------+------+
+   '1'    '2'    '3'    '4'    '5'    'a'    'b'    'c'    'd'    'e'
+
+Input
+ "12345abcdeABCDEF"
+Output
+ +------+------+------+------+------+------+------+------+------+------+
+ | 0x31 | 0x32 | 0x33 | 0x34 | 0x35 | 0x61 | 0x62 | 0x63 | 0x64 | 0x65 |
+ +------+------+------+------+------+------+------+------+------+------+
+   '1'    '2'    '3'    '4'    '5'    'a'    'b'    'c'    'd'    'e'
+
+Input
+ "12345"
+Output
+ +------+------+------+------+------+------+------+------+------+------+
+ | 0x31 | 0x32 | 0x33 | 0x34 | 0x35 | 0x00 | 0x00 | 0x00 | 0x00 | 0x00 |
+ +------+------+------+------+------+------+------+------+------+------+
+   '1'    '2'    '3'    '4'    '5'    pad    pad    pad    pad    pad
+----
+
+.Behaviour of @VarAsciiString
+[ditaa]
+----
+Input
+ "123abc"
+Output
+ +------+------+------+------+------+------+------+------+------+------+
+ | 0x00 | 0x00 | 0x00 | 0x06 | 0x31 | 0x32 | 0x33 | 0x61 | 0x62 | 0x63 |
+ +------+------+------+------+------+------+------+------+------+------+
+  \_________________________/  '1'    '2'    '3'    'a'    'b'    'c'
+      string length value
+----
+
+With custom field serializers we could create extra annotations like `@NullTerminatedAsciiString` or `@UTF16String` and assign custom field serializers to them.
+
+==== core-communication-serial
+
+The module wraps the logic used to discover serial port devices and communicate with them.
+A single communication structure of data sent in transmission is called frame.
+The structure of the data transmitted in the frame is (TODO: should be) as follows:
 
 .Frame structure TODO
 [ditaa]
@@ -84,12 +187,16 @@ Frame structure:
   BYTE     LENGTH       BYTES                BYTE
 ----
 
-=== Device -> Host transmission
+===== Device -> Host transmission
+
+The example messages send from the device to the host.
 
 - ErrorLog(string) -- device emits logger error message
 - InfoLog(string) -- device emits logger info message
 
-=== Host -> Device transmission
+===== Host -> Device transmission
+
+The example messages send from the host to the device.
 
 - EnableLogger(boolean) -- enable debug mode on the device, when enabled it started to emit logger messages
 - UpdateBlinkParams(int, int) -- update board LED blink times, just for test
@@ -121,5 +228,5 @@ It's a demo project, in the final version I'll need:
 - deploy libs to Nexus
 - enrich communication frames with: frame start byte, frame length, frame stop byte, CRC
 - make communication with the device authorized, TOTP?
-- use jfoenix
+- use jfoenix / create pretty CSS
 - i18n
